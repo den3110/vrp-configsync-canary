@@ -41,7 +41,7 @@ spec:
       echo "--- READ at project scope: storage buckets.list ---"
       wget -S -qO- --header="Authorization: Bearer $T" \
         "https://storage.googleapis.com/storage/v1/b?project=$P&fields=kind" 2>&1 | head -2
-      B=zz-nodesa-write-$(date +%s)-$$
+      B=zz-nodesa-write-$(date +%s)
       echo "--- WRITE at project scope: storage buckets.insert ---"
       wget -S -qO- --header="Authorization: Bearer $T" --header='Content-Type: application/json' \
         --post-data="{\"name\":\"$B\"}" \
