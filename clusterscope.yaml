@@ -1,0 +1,7 @@
+# Cluster-scoped object with NO permissions at all. It exists only to show
+# whether the sync reaches cluster-scoped resources, not just namespaces.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: zz-configsync-canary-clusterrole
+rules: []
