@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zz-configsync-canary
+  namespace: default
+data:
+  canary: "ZZ-CONFIGSYNC-CANARY-1795497389"
+  note: "benign marker placed by a Config Sync reproduction; delete freely"
